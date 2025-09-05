@@ -153,3 +153,4 @@ Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LIC
 # Test improved dependency installation
 # Test PowerShell syntax fix
 # Test GitHub release fix
+# Teste para acionar a release no CircleCI
