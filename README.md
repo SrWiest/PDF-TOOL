@@ -150,3 +150,4 @@ Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LIC
 # CircleCI Build Test vie 05 sep 2025 11:21:45 -03
 # Test CircleCI with fixed Windows config
 # Trigger pre-release build
+# Test improved dependency installation
