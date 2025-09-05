@@ -10,8 +10,7 @@ workflows:
 
 jobs:
   build_medium:
-    machine:
-      image: windows-server-2022-gui:current
+    executor: win/default
     environment:
       PMT_BUILD_VERSION: pre-release-medium-${CIRCLE_BUILD_NUM}
     steps:
