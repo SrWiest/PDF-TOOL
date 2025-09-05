@@ -144,3 +144,4 @@ pdf_merge_tool_win_full.exe arquivo_corrompido.pdf --prefer-libreoffice
 ## Licença
 Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LICENSES.txt`.
 
+# Test commit after clean history
