@@ -152,3 +152,4 @@ Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LIC
 # Trigger pre-release build
 # Test improved dependency installation
 # Test PowerShell syntax fix
+# Test GitHub release fix
