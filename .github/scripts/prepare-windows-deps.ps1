@@ -165,14 +165,14 @@ Write-Host "  Verificação Final" -ForegroundColor Cyan
 Write-Host "========================================="
 
 if ($global:errorCount -gt 0) {
-    Write-Host "ℹ️  $($global:errorCount) dependência(s) não encontrada(s) - build continuará com funcionalidades limitadas." -ForegroundColor Yellow
-    Write-Host "✅ Build prosseguindo normalmente..." -ForegroundColor Green
-    # Não criar arquivo MISSING_LICENSES.txt em CI
-    # Verificar se o arquivo existe e removê-lo se estiver vazio
+    Write-Host "Info: $($global:errorCount) dependencia(s) nao encontrada(s) - build continuara com funcionalidades limitadas." -ForegroundColor Yellow
+    Write-Host "Build prosseguindo normalmente..." -ForegroundColor Green
+    # Nao criar arquivo MISSING_LICENSES.txt em CI
+    # Verificar se o arquivo existe e remove-lo se estiver vazio
     if ((Test-Path $missingLicensesFile) -and ((Get-Content $missingLicensesFile).Count -le 1)) {
         Remove-Item $missingLicensesFile -ErrorAction SilentlyContinue
     }
 } else {
-    Write-Host "🎉 Todas as dependências foram preparadas com sucesso." -ForegroundColor Green
+    Write-Host "Todas as dependencias foram preparadas com sucesso." -ForegroundColor Green
     Remove-Item $missingLicensesFile -ErrorAction SilentlyContinue
 }
