@@ -1,0 +1,10 @@
+PyPDF2
+Pillow
+img2pdf
+pikepdf
+
+# Corrige erro de importação do pkg_resources/jaraco.text no build do Windows
+jaraco.text==3.11.1
+
+# Corrige erro de importação do pkg_resources/platformdirs no build do Windows
+platformdirs>=2.5

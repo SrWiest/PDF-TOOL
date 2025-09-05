@@ -1,0 +1,184 @@
+# Workflow unificado para construir os instaladores do Windows.
+# Roda em push para main/tags ou manualmente com opções.
+
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version_to_build:
+        description: 'Qual versão construir?'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - lite
+          - medium
+          - full
+      create_release:
+        description: 'Criar um pre-release (apenas para trigger manual)?'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  prepare_matrix:
+    name: Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set_matrix.outputs.matrix }}
+    steps:
+      - name: Determine build matrix
+        id: set_matrix
+        run: |
+          VERSION_TO_BUILD=${{ github.event.inputs.version_to_build || 'all' }}
+          LITE_JSON='{"version":"lite","requirements":"requirements/requirements-lite.txt","build_installer":false}'
+          MEDIUM_JSON='{"version":"medium","requirements":"requirements/requirements-medium.txt","build_installer":true}'
+          FULL_JSON='{"version":"full","requirements":"requirements/requirements-full.txt","build_installer":true}'
+          
+          MATRIX_ENTRIES=""
+          if [[ "$VERSION_TO_BUILD" == "all" ]]; then
+            MATRIX_ENTRIES="$LITE_JSON, $MEDIUM_JSON, $FULL_JSON"
+          elif [[ "$VERSION_TO_BUILD" == "lite" ]]; then
+            MATRIX_ENTRIES="$LITE_JSON"
+          elif [[ "$VERSION_TO_BUILD" == "medium" ]]; then
+            MATRIX_ENTRIES="$MEDIUM_JSON"
+          elif [[ "$VERSION_TO_BUILD" == "full" ]]; then
+            MATRIX_ENTRIES="$FULL_JSON"
+          fi
+          # A saída deve ser um objeto JSON com a chave "include"
+          JSON_STRING='{"include": ['$MATRIX_ENTRIES']}'
+          echo "matrix=$JSON_STRING" >> $GITHUB_OUTPUT
+
+  build:
+    name: Build ${{ matrix.version }} Version
+    needs: prepare_matrix
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.prepare_matrix.outputs.matrix) }}
+
+    env:
+      PMT_BUILD_VERSION: ${{ github.ref_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: ${{ matrix.requirements }}
+
+      - name: Cache para dependências externas
+        id: cache-third-party
+        uses: actions/cache@v4
+        with:
+          path: third_party_full
+          key: ${{ runner.os }}-third-party-${{ hashFiles('.github/scripts/*.ps1') }}
+
+      - name: Instalar dependências Python
+        run: |
+          python -m pip install --upgrade pip setuptools wheel pyinstaller
+          pip install -r ${{ matrix.requirements }}
+          pip freeze
+
+      - name: Preparar dependências (se não houver cache)
+        if: steps.cache-third-party.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          if ("${{ matrix.version }}" -eq "medium" -or "${{ matrix.version }}" -eq "full") {
+            .\.github\scripts\prepare-windows-deps.ps1
+            .\.github\scripts\prepare-image-tools-deps.ps1
+          }
+          if ("${{ matrix.version }}" -eq "full") {
+            .\.github\scripts\prepare-libreoffice-deps.ps1
+          }
+
+      - name: Construir executável com PyInstaller
+        env:
+          PDF_TOOL_VERSION: ${{ matrix.version }}
+        run: pyinstaller specs/build.spec --clean
+
+      - name: Construir instalador Windows (se aplicável)
+        if: matrix.build_installer == true
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+          cd installer
+          $version = "${{ env.PMT_BUILD_VERSION }}" -replace "v", ""
+          if (-not $version) { $version = "0.0.0-dev-${{ github.run_number }}" }
+          $installerScript = "install_${{ matrix.version }}.iss"
+          ISCC.exe "/DMyAppVersion=$version" ".\$installerScript"
+
+      - name: Upload artifact
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.version }}-artifact
+          path: |
+            dist/pdf_merge_tool_win_${{ matrix.version }}/pdf_merge_tool_win_${{ matrix.version }}.exe
+            installer/Output/*.exe
+          retention-days: 1
+          compression-level: 9
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: |-
+      startsWith(github.ref, 'refs/tags/v') || 
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Listar arquivos para debug
+        run: ls -R artifacts
+
+      - name: Preparar arquivos para release
+        id: prep_files
+        run: |
+          mkdir release_assets
+          find artifacts -type f -name "*.exe" -exec mv {} release_assets/ \;
+          cd release_assets
+          sha256sum * > CHECKSUMS.txt
+          echo "Release files prepared:"
+          ls -l
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            TAG_NAME="pre-release-main-${{ github.run_number }}"
+            RELEASE_NAME="🧪 Pre-Release (main) - ${{ github.run_number }}"
+            PRERELEASE_FLAG=true
+          else
+            TAG_NAME="${{ github.ref_name }}"
+            RELEASE_NAME="Release ${{ github.ref_name }}"
+            PRERELEASE_FLAG=false
+          fi
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          echo "release_name=$RELEASE_NAME" >> $GITHUB_OUTPUT
+          echo "prerelease_flag=$PRERELEASE_FLAG" >> $GITHUB_OUTPUT
+
+      - name: Criar Release e Upload dos Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_assets/*
+          name: ${{ steps.prep_files.outputs.release_name }}
+          tag_name: ${{ steps.prep_files.outputs.tag_name }}
+          prerelease: ${{ steps.prep_files.outputs.prerelease_flag }}
+          generate_release_notes: true

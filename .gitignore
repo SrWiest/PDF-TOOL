@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+dist/
+build/
+venv/
+.env/
+.idea/
+.vscode/
+*.log
+
+# Executables and Installers
+*.exe
+
+# Downloaded dependencies
+third_party_full/

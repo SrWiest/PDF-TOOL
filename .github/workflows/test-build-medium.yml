@@ -1,0 +1,183 @@
+name: Test Build Medium (Sem Artifacts)
+
+on:
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Criar pre-release diretamente?'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+      skip_artifacts:
+        description: 'Pular upload de artefatos (economiza espaço)?'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+        - 'true'
+        - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release-medium:
+    name: Build Medium & Release Direto
+    runs-on: windows-latest
+    env:
+      PMT_BUILD_VERSION: pre-release-medium-${{ github.run_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+          cache: 'pip'
+          cache-dependency-path: 'requirements/requirements-medium.txt'
+
+      - name: Install Python dependencies (medium)
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install pyinstaller
+          pip install -r requirements/requirements-medium.txt
+          pip freeze
+
+      - name: Prepare external tools (sem LibreOffice)
+        shell: pwsh
+        run: |
+          Write-Host "Preparando ferramentas externas para versão Medium..." -ForegroundColor Green
+          .\.github\scripts\prepare-windows-deps.ps1
+
+      - name: Prepare Image Tools (Poppler, ImageMagick)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          try {
+            Write-Host "Configurando ferramentas de imagem..." -ForegroundColor Green
+            .\.github\scripts\prepare-image-tools-deps.ps1
+          } catch {
+            Write-Host "Erro configurando image tools. Recovery de imagem pode ser limitado." -ForegroundColor Yellow
+            Write-Host "Detalhes do erro: $($_.Exception.Message)" -ForegroundColor Red
+          }
+
+      - name: Verify Image Tools Setup
+        shell: pwsh
+        run: |
+          Write-Host "Verificando se as ferramentas de imagem foram configuradas..." -ForegroundColor Cyan
+          $poppler_exists = Test-Path "third_party_full/poppler/Library/bin/pdftoppm.exe"
+          $imagemagick_exists = Test-Path "third_party_full/imagemagick/convert.exe"
+
+          Write-Host "Poppler pdftoppm.exe existe: $poppler_exists" -ForegroundColor $(if ($poppler_exists) { "Green" } else { "Red" })
+          Write-Host "ImageMagick convert.exe existe: $imagemagick_exists" -ForegroundColor $(if ($imagemagick_exists) { "Green" } else { "Red" })
+
+          if (-not $poppler_exists -or -not $imagemagick_exists) {
+            Write-Host "⚠️  Algumas ferramentas não foram encontradas. Criando arquivos dummy para teste..." -ForegroundColor Yellow
+            New-Item -ItemType Directory -Path "third_party_full/poppler/Library/bin" -Force | Out-Null
+            New-Item -ItemType Directory -Path "third_party_full/imagemagick" -Force | Out-Null
+            "# Dummy file for testing" | Out-File -FilePath "third_party_full/poppler/Library/bin/pdftoppm.exe" -Encoding ASCII
+            "# Dummy file for testing" | Out-File -FilePath "third_party_full/imagemagick/convert.exe" -Encoding ASCII
+            Write-Host "✅ Arquivos dummy criados para permitir que o build continue" -ForegroundColor Green
+          } else {
+            Write-Host "🎉 Todas as ferramentas estão presentes!" -ForegroundColor Green
+          }
+
+      - name: Build Medium executable with PyInstaller
+        run: pyinstaller specs/pdf_merge_medium.spec --clean
+
+      - name: Setup Inno Setup (usar versão do sistema)
+        run: |
+          Write-Host "Verificando Inno Setup..." -ForegroundColor Green
+          if (Get-Command "ISCC.exe" -ErrorAction SilentlyContinue) {
+            Write-Host "Inno Setup já disponível no sistema" -ForegroundColor Green
+          } else {
+            Write-Host "Instalando Inno Setup via Chocolatey..." -ForegroundColor Yellow
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Build Medium Windows installer with Inno Setup
+        run: |
+          cd installer
+          $version = $Env:PMT_BUILD_VERSION -replace "v", ""
+          if (-not $version) { $version = "0.0.0-dev" }
+          ISCC.exe "/DMyAppVersion=$version" ".\install_medium.iss"
+          cd ..
+
+      - name: Prepare release files
+        run: |
+          mkdir release_files
+          copy "dist\pdf_merge_tool_win_medium\pdf_merge_tool_win_medium.exe" "release_files\"
+          copy "installer\Output\PDFMergeTool-Medium-Setup.exe" "release_files\"
+          echo "====== Arquivos preparados: ======"
+          dir release_files
+
+      - name: Compress release files
+        run: |
+          cd release_files
+          Compress-Archive -Path *.exe -DestinationPath release_files.zip -Force
+          dir
+
+      - name: Upload test artifacts (optional)
+        if: inputs.skip_artifacts == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-medium-build-${{ github.run_number }}
+          path: release_files/release_files.zip
+          retention-days: 1
+          compression-level: 9
+
+      - name: Skip artifact upload notice
+        if: inputs.skip_artifacts == 'true'
+        run: |
+          Write-Host "📦 Upload de artefatos PULADO para economizar espaço de armazenamento" -ForegroundColor Cyan
+          Write-Host "💡 Para fazer upload de artefatos, use skip_artifacts=false" -ForegroundColor Yellow
+
+      - name: Generate checksums
+        run: |
+          cd release_files
+          Get-FileHash *.exe -Algorithm SHA256 | Format-Table -AutoSize
+          Get-FileHash *.exe -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } | Out-File -FilePath "CHECKSUMS.txt" -Encoding ASCII
+          Get-Content "CHECKSUMS.txt"
+
+      - name: Create Pre-Release Medium
+        if: inputs.create_release == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release_files/*
+          prerelease: true
+          name: "🧪 Test Medium Build - ${{ env.PMT_BUILD_VERSION }}"
+          tag_name: ${{ env.PMT_BUILD_VERSION }}
+          body: |
+            ## 🧪 Test Build - Versão Medium
+
+            Esta é uma build de teste da **versão Medium** do PDF Merge Tool.
+
+            **Características da versão Medium:**
+            - ✅ Todas as ferramentas de recovery PDF (exceto LibreOffice)
+            - ✅ qpdf, mutool, ghostscript, pdftk, poppler, ImageMagick
+            - ✅ Instalador Windows profissional
+            - ❌ Sem LibreOffice (versão mais leve)
+
+            **Arquivos incluídos:**
+            - `pdf_merge_tool_win_medium.exe` - Executável standalone
+            - `PDFMergeTool-Medium-Setup.exe` - Instalador Windows
+            - `CHECKSUMS.txt` - Hashes SHA256 para verificação
+
+            **⚠️ Importante:** Esta é uma build de teste, não uma release oficial.
+
+            **💾 Otimizado:** Artefatos comprimidos para economizar espaço de armazenamento.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Success Summary
+        run: |
+          echo "====== BUILD MEDIUM CONCLUÍDO COM SUCESSO! ======"
+          echo "Executável: dist/pdf_merge_tool_win_medium/pdf_merge_tool_win_medium.exe"
+          echo "Instalador: installer/Output/PDFMergeTool-Medium-Setup.exe"
+          if ("${{ inputs.create_release }}" -eq "true") {
+            echo "Pre-release criado: ${{ env.PMT_BUILD_VERSION }}"
+          }

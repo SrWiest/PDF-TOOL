@@ -1,0 +1,3 @@
+Componentes principais: PyPDF2 (BSD), Pillow (permissiva), img2pdf (LGPL-3.0),
+pikepdf (MPL 2.0), pdf2image (MIT), pytesseract (Apache 2.0), ocrmypdf (Apache 2.0), Tesseract (Apache 2.0).
+Ver documentação para detalhes de distribuição.

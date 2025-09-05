@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\PDFMergeTool]
+@="Unir PDFs (PDF Merge Tool)"
+"MultiSelectModel"="Document"
+
+[HKEY_CLASSES_ROOT\SystemFileAssociations\.pdf\shell\PDFMergeTool\command]
+@="\"C:\\Program Files\\PDFMergeTool\\pdf_merge_tool_win_full.exe\" --auto-name --final-shrink %*"

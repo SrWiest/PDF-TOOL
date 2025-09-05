@@ -1,0 +1,16 @@
+PyPDF2
+Pillow
+img2pdf
+pikepdf
+pdf2image
+pytesseract
+ocrmypdf
+psutil
+
+# Corrige erro de importação do pkg_resources/jaraco.text no build do Windows
+jaraco.text==3.11.1
+
+# Corrige erro de importação do pkg_resources/platformdirs no build do Windows
+platformdirs>=2.5
+
+# Medium inclui TODAS as funcionalidades (pytesseract, pdf2image, ocrmypdf) EXCETO LibreOffice

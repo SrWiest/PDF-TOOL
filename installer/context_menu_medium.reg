@@ -1,0 +1,19 @@
+Windows Registry Editor Version 5.00
+
+; Menu de contexto para PDF Merge Tool Medium
+; Adiciona opção "Unir com PDF Merge Tool Medium" ao clicar com botão direito em arquivos PDF
+
+[HKEY_CLASSES_ROOT\*\shell\PDFMergeMedium]
+@="Unir com PDF Merge Tool Medium"
+"Icon"="C:\\Program Files\\PDF Merge Tool Medium\\pdf_merge_tool_win_medium.exe,0"
+
+[HKEY_CLASSES_ROOT\*\shell\PDFMergeMedium\command]
+@="\"C:\\Program Files\\PDF Merge Tool Medium\\pdf_merge_tool_win_medium.exe\" \"%1\""
+
+; Menu específico para arquivos .pdf
+[HKEY_CLASSES_ROOT\.pdf\shell\PDFMergeMedium]
+@="Unir PDFs com Medium"
+"Icon"="C:\\Program Files\\PDF Merge Tool Medium\\pdf_merge_tool_win_medium.exe,0"
+
+[HKEY_CLASSES_ROOT\.pdf\shell\PDFMergeMedium\command]
+@="\"C:\\Program Files\\PDF Merge Tool Medium\\pdf_merge_tool_win_medium.exe\" \"%1\""

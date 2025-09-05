@@ -1,0 +1,18 @@
+# THIRD-PARTY LICENSES
+
+Este arquivo lista licenças de componentes embutidos na variante FULL (extended).
+
+| Componente   | Licença        | Fonte / Referência                                                    |
+|--------------|---------------|------------------------------------------------------------------------|
+| qpdf         | Apache License 2.0 | https://github.com/qpdf/qpdf |
+| poppler      | GPL (v2+)      | https://gitlab.freedesktop.org/poppler/poppler |
+| tesseract    | Apache License 2.0 | https://github.com/tesseract-ocr/tesseract |
+| ghostscript  | AGPL           | https://ghostscript.com/ / https://github.com/ArtifexSoftware/ghostpdl-downloads |
+
+AVISO: poppler (GPL) e ghostscript (AGPL) impõem obrigações de disponibilização do código fonte e alterações. Certifique-se de cumprir antes de distribuir os binários.
+
+Para cada arquivo LICENSE / COPYING agregado veja também:
+- licenses/THIRD_PARTY_AGGREGATED.txt gerado no build.
+- arquivos individuais em licenses/*_LICENSE.txt
+
+(Se algum estiver ausente, verifique MISSING_LICENSES.txt)
