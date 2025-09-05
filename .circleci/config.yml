@@ -148,7 +148,7 @@ jobs:
                 --prerelease `
                 --generate-notes `
                 dist/pdf_merge_tool_win_medium.exe `
-                installer/Output/PDF_Tool_Medium_Setup.exe
+                installer/PDFMergeTool-Medium-Setup.exe
 
               Write-Host "✅ Pre-release criado com sucesso!" -ForegroundColor Green
               Write-Host "📦 Release: v$env:PMT_BUILD_VERSION" -ForegroundColor Cyan
