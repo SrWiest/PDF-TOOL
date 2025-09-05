@@ -34,40 +34,46 @@ jobs:
 
       - run:
           name: Prepare external tools (Windows dependencies)
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Preparando ferramentas externas..." -ForegroundColor Green
-            PowerShell -ExecutionPolicy Bypass -File .\.github\scripts\prepare-windows-deps.ps1
+            .\.github\scripts\prepare-windows-deps.ps1
 
       - run:
           name: Prepare Image Tools (Poppler, ImageMagick)
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Configurando ferramentas de imagem..." -ForegroundColor Green
             try {
-              PowerShell -ExecutionPolicy Bypass -File .\.github\scripts\prepare-image-tools-deps.ps1
+              .\.github\scripts\prepare-image-tools-deps.ps1
             } catch {
               Write-Host "Erro configurando image tools. Continuando sem elas..." -ForegroundColor Yellow
             }
 
       - run:
           name: Verify tools setup
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Verificando ferramentas instaladas..." -ForegroundColor Cyan
             Get-ChildItem third_party_full -Recurse -ErrorAction SilentlyContinue
 
       - run:
           name: Build Medium executable with PyInstaller
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Construindo executável com PyInstaller..." -ForegroundColor Green
             pyinstaller specs/pdf_merge_medium.spec --clean
 
       - run:
           name: Setup Inno Setup
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Instalando Inno Setup..." -ForegroundColor Green
             choco install innosetup --yes
 
       - run:
           name: Create Windows Installer
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Criando instalador Windows..." -ForegroundColor Green
             ISCC.exe installer/install_medium.iss
@@ -82,6 +88,7 @@ jobs:
 
       - run:
           name: Create GitHub Release
+          shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Criando release no GitHub..." -ForegroundColor Green
             # GitHub release creation would go here
