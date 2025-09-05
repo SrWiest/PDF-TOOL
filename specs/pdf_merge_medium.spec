@@ -6,7 +6,11 @@ import sys
 from pathlib import Path
 
 # Get the base directory
-BASE_DIR = Path(__file__).resolve().parent.parent
+if '__file__' in globals():
+    BASE_DIR = Path(__file__).resolve().parent.parent
+else:
+    # Fallback for when __file__ is not available
+    BASE_DIR = Path.cwd().parent
 
 # Configuration for Medium version
 VERSION = "medium"
