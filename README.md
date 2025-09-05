@@ -148,3 +148,4 @@ Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LIC
 # CircleCI test commit
 # Test: Only CircleCI active
 # CircleCI Build Test vie 05 sep 2025 11:21:45 -03
+# Test CircleCI with fixed Windows config
