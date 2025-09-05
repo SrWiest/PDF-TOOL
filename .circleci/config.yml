@@ -22,7 +22,7 @@ jobs:
           name: Setup Python 3.11
           command: |
             choco install python311 --yes
-            refreshenv
+            export PATH="/c/Python311:/c/Python311/Scripts:$PATH"
             python -m pip install --upgrade pip setuptools wheel
 
       - run:
