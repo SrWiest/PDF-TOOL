@@ -10,7 +10,8 @@ if '__file__' in globals():
     BASE_DIR = Path(__file__).resolve().parent.parent
 else:
     # Fallback for when __file__ is not available
-    BASE_DIR = Path.cwd().parent
+    # Use the current working directory (project root)
+    BASE_DIR = Path.cwd()
 
 # Configuration for Medium version
 VERSION = "medium"
