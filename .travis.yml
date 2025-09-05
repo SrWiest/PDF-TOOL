@@ -1,0 +1,38 @@
+language: python
+python:
+  - "3.11"
+
+os: windows
+
+env:
+  - PMT_BUILD_VERSION=pre-release-medium-${TRAVIS_BUILD_NUMBER}
+
+install:
+  - python -m pip install --upgrade pip setuptools wheel
+  - pip install pyinstaller
+  - pip install -r requirements/requirements-medium.txt
+
+before_script:
+  - echo "Setting up build environment..."
+  - python -c "import sys; print(f'Python version: {sys.version}')"
+  - pip freeze
+
+script:
+  - echo "Building PDF Tool Medium version..."
+  - echo "Note: Windows-specific tools (Poppler, ImageMagick) may not be available on Travis CI"
+  - echo "This build will work for basic functionality without image processing"
+
+  # Build with PyInstaller (basic version without external tools)
+  - pyinstaller --onefile --name pdf_merge_tool_medium src/pdf_merge_tool_win.py
+
+  # List the generated files
+  - ls -la dist/
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN
+  file: dist/*
+  skip_cleanup: true
+  on:
+    branch: main
+  name: $PMT_BUILD_VERSION
