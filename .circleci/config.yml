@@ -90,6 +90,54 @@ jobs:
           name: Create GitHub Release
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
-            Write-Host "Criando release no GitHub..." -ForegroundColor Green
-            # GitHub release creation would go here
-            Write-Host "Release $env:PMT_BUILD_VERSION criada com sucesso!" -ForegroundColor Green
+            Write-Host "Criando pre-release no GitHub..." -ForegroundColor Green
+
+            # Install GitHub CLI if not available
+            if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
+              Write-Host "Instalando GitHub CLI..." -ForegroundColor Yellow
+              choco install gh --yes
+            }
+
+            # Check if GITHUB_TOKEN is available
+            if ($env:GITHUB_TOKEN) {
+              Write-Host "Autenticando com GitHub..." -ForegroundColor Cyan
+              echo $env:GITHUB_TOKEN | gh auth login --with-token
+
+              Write-Host "Criando pre-release..." -ForegroundColor Green
+              $releaseNotes = @"
+            ## PDF Tool Medium v$env:PMT_BUILD_VERSION
+
+            ### ✅ Build Automático
+            - Gerado automaticamente pelo CircleCI
+            - Plataforma: Windows Server 2022
+            - Python: 3.11
+
+            ### 📦 Conteúdo
+            - Executável standalone (pdf_merge_tool_win_medium.exe)
+            - Instalador Windows (PDF_Tool_Medium_Setup.exe)
+
+            ### 🔧 Funcionalidades
+            - Merge de PDFs
+            - OCR com Tesseract
+            - Processamento de imagens
+            - Recuperação de PDFs danificados
+
+            ### ⚠️ Pre-release
+            Esta é uma versão de pré-lançamento para testes.
+            "@
+
+              # Create the release
+              gh release create "v$env:PMT_BUILD_VERSION" `
+                --title "PDF Tool Medium v$env:PMT_BUILD_VERSION" `
+                --notes $releaseNotes `
+                --prerelease `
+                --generate-notes `
+                dist/pdf_merge_tool_win_medium.exe `
+                installer/Output/PDF_Tool_Medium_Setup.exe
+
+              Write-Host "✅ Pre-release criado com sucesso!" -ForegroundColor Green
+              Write-Host "📦 Release: v$env:PMT_BUILD_VERSION" -ForegroundColor Cyan
+            } else {
+              Write-Host "⚠️ GITHUB_TOKEN não configurado. Release não criado." -ForegroundColor Yellow
+              Write-Host "Configure GITHUB_TOKEN nas variáveis de ambiente do CircleCI" -ForegroundColor Yellow
+            }
