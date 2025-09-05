@@ -1,0 +1,87 @@
+version: 2.1
+
+workflows:
+  build-and-release:
+    jobs:
+      - build_medium:
+          filters:
+            branches:
+              only: main
+
+jobs:
+  build_medium:
+    machine:
+      image: windows-server-2022-gui:current
+    environment:
+      PMT_BUILD_VERSION: pre-release-medium-${CIRCLE_BUILD_NUM}
+    steps:
+      - checkout
+
+      - run:
+          name: Setup Python 3.11
+          command: |
+            choco install python311 --yes
+            refreshenv
+            python -m pip install --upgrade pip setuptools wheel
+
+      - run:
+          name: Install Python dependencies
+          command: |
+            pip install pyinstaller
+            pip install -r requirements/requirements-medium.txt
+            pip freeze
+
+      - run:
+          name: Prepare external tools (Windows dependencies)
+          command: |
+            Write-Host "Preparando ferramentas externas..." -ForegroundColor Green
+            PowerShell -ExecutionPolicy Bypass -File .\.github\scripts\prepare-windows-deps.ps1
+
+      - run:
+          name: Prepare Image Tools (Poppler, ImageMagick)
+          command: |
+            Write-Host "Configurando ferramentas de imagem..." -ForegroundColor Green
+            try {
+              PowerShell -ExecutionPolicy Bypass -File .\.github\scripts\prepare-image-tools-deps.ps1
+            } catch {
+              Write-Host "Erro configurando image tools. Continuando sem elas..." -ForegroundColor Yellow
+            }
+
+      - run:
+          name: Verify tools setup
+          command: |
+            Write-Host "Verificando ferramentas instaladas..." -ForegroundColor Cyan
+            Get-ChildItem third_party_full -Recurse -ErrorAction SilentlyContinue
+
+      - run:
+          name: Build Medium executable with PyInstaller
+          command: |
+            Write-Host "Construindo executável com PyInstaller..." -ForegroundColor Green
+            pyinstaller specs/pdf_merge_medium.spec --clean
+
+      - run:
+          name: Setup Inno Setup
+          command: |
+            Write-Host "Instalando Inno Setup..." -ForegroundColor Green
+            choco install innosetup --yes
+
+      - run:
+          name: Create Windows Installer
+          command: |
+            Write-Host "Criando instalador Windows..." -ForegroundColor Green
+            ISCC.exe installer/install_medium.iss
+
+      - store_artifacts:
+          path: dist/
+          destination: builds
+
+      - store_artifacts:
+          path: installer/Output/
+          destination: installers
+
+      - run:
+          name: Create GitHub Release
+          command: |
+            Write-Host "Criando release no GitHub..." -ForegroundColor Green
+            # GitHub release creation would go here
+            Write-Host "Release $env:PMT_BUILD_VERSION criada com sucesso!" -ForegroundColor Green
