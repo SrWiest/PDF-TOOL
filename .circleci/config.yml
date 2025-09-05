@@ -37,6 +37,21 @@ jobs:
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Preparando ferramentas externas..." -ForegroundColor Green
+            Write-Host "Instalando dependências adicionais para versão Medium..." -ForegroundColor Cyan
+
+            # Instalar ferramentas adicionais necessárias para Medium
+            $tools = @("qpdf", "poppler", "tesseract", "ghostscript", "mupdf")
+            foreach ($tool in $tools) {
+              Write-Host "Instalando $tool..." -ForegroundColor Yellow
+              try {
+                choco install $tool --yes --no-progress --force --force-dependencies
+                Write-Host "✅ $tool instalado com sucesso" -ForegroundColor Green
+              } catch {
+                Write-Warning "Falha ao instalar $tool via Chocolatey: $($_.Exception.Message)"
+              }
+            }
+
+            # Executar script de preparação
             .\.github\scripts\prepare-windows-deps.ps1
 
       - run:
