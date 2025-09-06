@@ -64,7 +64,7 @@ $tesseractZip = Join-Path $PSScriptRoot "tesseract-ocr-3.02-win32-portable.zip"
 $tesseractDest = Join-Path $thirdPartyDir "tesseract"
 
 try {
-    Invoke-WebRequest -Uri $tesseractUrl -OutFile $tesseractZip
+    curl -L $tesseractUrl -o $tesseractZip # Use curl with -L for redirects
     Expand-Archive -Path $tesseractZip -Destination $tesseractDest -Force
     Remove-Item $tesseractZip # Clean up the zip file
     Write-Host "  ✅ Tesseract portátil baixado e extraído com sucesso." -ForegroundColor Green
