@@ -12,15 +12,16 @@ try {
         exit 1
     }
 
-    # Forçar versão x86 para compatibilidade com executável de 32-bit
+    # Pacotes que funcionam melhor com a flag --x86
     $choco_packages_x86 = @(
         "ghostscript",
-        "qpdf",
+        "qpdf"
+    )
+    # Pacotes que não suportam ou não precisam da flag --x86
+    $choco_packages_any = @(
         "poppler",
         "tesseract",
-        "mupdf"
-    )
-    $choco_packages_any = @(
+        "mupdf",
         "vcredist140",
         "pdftk-server"
     )
@@ -30,13 +31,7 @@ try {
         try {
             choco install $pkg --yes --no-progress --force --force-dependencies --x86
         } catch {
-            Write-Warning "Falha ao instalar $pkg (x86). Tentando sem --x86..."
-            try {
-                choco install $pkg --yes --no-progress --force --force-dependencies
-                Write-Host "  ✅ $pkg instalado sem --x86" -ForegroundColor Green
-            } catch {
-                Write-Warning "Falha completa ao instalar $pkg. Continuando..."
-            }
+            Write-Warning "Falha ao instalar $pkg (x86). Continuando..."
         }
     }
 
@@ -68,8 +63,7 @@ function Process-Package {
     param (
         [Parameter(Mandatory)][string]$PackageName,
         [string]$DestSubFolder,
-        [string[]]$SourcePaths, # Caminhos relativos ou absolutos onde procurar os binários
-        [string]$LicenseSearchPattern = "LICENSE*,COPYING*"
+        [string[]]$SourcePaths
     )
 
     Write-Host "`n-- Processando pacote: $PackageName --" -ForegroundColor Cyan
@@ -79,7 +73,6 @@ function Process-Package {
         $expandedPath = try { Resolve-Path -Path $sourcePath -ErrorAction SilentlyContinue } catch { $null }
         if (-not $expandedPath) { continue }
 
-        # Pega o primeiro caminho encontrado que existe
         $actualSourcePath = $expandedPath | Select-Object -First 1
 
         if (Test-Path $actualSourcePath) {
@@ -88,16 +81,8 @@ function Process-Package {
             New-Item -ItemType Directory -Force -Path $destDir | Out-Null
             Copy-Item -Path "$actualSourcePath\*" -Destination $destDir -Recurse -Force
             Write-Host "  >> Copiado $PackageName para $destDir" -ForegroundColor Green
-
-            # Lógica de licença (simplificada)
-            $licenseFile = Get-ChildItem -Path $actualSourcePath -Include $LicenseSearchPattern -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($licenseFile) {
-                $licenseDest = Join-Path $licensesDir "$($PackageName)_LICENSE.txt"
-                Copy-Item -Path $licenseFile.FullName -Destination $licenseDest -Force
-                Write-Host "  >> Licença copiada para $licenseDest" -ForegroundColor Green
-            }
             $found = $true
-            break # Para de procurar assim que encontrar um caminho válido
+            break
         }
     }
 
@@ -106,17 +91,16 @@ function Process-Package {
     }
 }
 
-# --- Mapeamento de pacotes e caminhos de busca ---
+# --- Mapeamento de pacotes e caminhos de busca (CORRIGIDO) ---
 $chocoLibPath = "C:\ProgramData\chocolatey\lib"
 
-# Caminhos mais robustos e específicos para cada ferramenta
 $packages = @{
-    qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\bin") }
+    qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
     poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin") }
-    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path $chocoLibPath "pdftk-server\tools\bin") }
-    tesseract      = @{ Dest = "tesseract";   Paths = @(Join-Path $chocoLibPath "tesseract\tools") }
-    ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "ghostscript\tools\gs*\bin") }
-    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools") }
+    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path $env:ProgramFiles(x86) "PDFtk Server\bin") }
+    tesseract      = @{ Dest = "tesseract";   Paths = @(Join-Path $env:ProgramFiles "Tesseract-OCR") }
+    ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
+    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*") }
 }
 
 # --- Processamento dos pacotes ---
