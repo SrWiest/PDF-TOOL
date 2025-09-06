@@ -32,7 +32,7 @@ datas += collect_data_files('ocrmypdf')
 third_party_dir = BASE_DIR / 'third_party_full'
 if third_party_dir.is_dir():
     for item in third_party_dir.iterdir():
-        if item.is_dir() and item.name != 'libreoffice':
+        if item.name != 'libreoffice':
             datas.append((str(item), f'third_party_full/{item.name}'))
 
 # Hidden imports for medium version
