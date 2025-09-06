@@ -13,37 +13,21 @@ try {
     }
 
     # Instalar pacotes um por um para melhor log e resiliência
-    # Forçar versão x86 para compatibilidade com executável de 32-bit
-    $choco_packages_x86 = @(
+    $choco_packages = @(
         "ghostscript",
         "qpdf",
         "poppler",
         "tesseract",
-        "mupdf"
-    )
-    $choco_packages_any = @(
+        "mupdf",
         "vcredist140",
         "pdftk-server"
     )
 
-    foreach ($pkg in $choco_packages_x86) {
-        Write-Host "--- Instalando $pkg (x86) ---"
+    foreach ($pkg in $choco_packages) {
+        Write-Host "--- Instalando $pkg ---" -ForegroundColor Cyan
         try {
-            choco install $pkg --yes --no-progress --force --force-dependencies --x86
-        } catch {
-            Write-Warning "Falha ao instalar $pkg (x86). Tentando sem --x86..."
-            try {
-                choco install $pkg --yes --no-progress --force --force-dependencies
-                Write-Host "  ✅ $pkg instalado sem --x86" -ForegroundColor Green
-            } catch {
-                Write-Warning "Falha completa ao instalar $pkg. Continuando..."
-            }
-        }
-    }
-
-    foreach ($pkg in $choco_packages_any) {
-        Write-Host "--- Instalando $pkg ---"
-        try {
+            # A flag --x86 não é confiável e pode não ser suportada por todos os pacotes.
+            # A maioria dos pacotes modernos lida com a arquitetura correta.
             choco install $pkg --yes --no-progress --force --force-dependencies
         } catch {
             Write-Warning "Falha ao instalar $pkg. Continuando..."
@@ -58,13 +42,12 @@ catch {
 # --- Preparação de diretórios ---
 $thirdPartyDir = "third_party_full"
 $licensesDir = "licenses"
-$missingLicensesFile = Join-Path $licensesDir "MISSING_LICENSES.txt"
 
+# Limpa diretórios antigos para garantir um build limpo
+if (Test-Path $thirdPartyDir) { Remove-Item -Recurse -Force $thirdPartyDir }
+if (Test-Path $licensesDir) { Remove-Item -Recurse -Force $licensesDir }
 New-Item -ItemType Directory -Force -Path $thirdPartyDir | Out-Null
 New-Item -ItemType Directory -Force -Path $licensesDir | Out-Null
-"Os seguintes componentes ou seus arquivos de licença não foram encontrados durante o build:" | Set-Content -Path $missingLicensesFile
-
-$global:errorCount = 0
 
 # --- Função auxiliar para processar pacotes ---
 function Process-Package {
@@ -79,11 +62,11 @@ function Process-Package {
     $found = $false
 
     foreach ($sourcePath in $SourcePaths) {
-        # Expandir wildcards no caminho
-        $expandedPaths = try { Resolve-Path -Path $sourcePath -ErrorAction Stop } catch { $null }
-        if (-not $expandedPaths) { continue }
+        $expandedPath = try { Resolve-Path -Path $sourcePath -ErrorAction SilentlyContinue } catch { $null }
+        if (-not $expandedPath) { continue }
 
-        $actualSourcePath = $expandedPaths | Select-Object -Last 1 # Pegar a versão mais recente se houver múltiplas
+        # Pega o primeiro caminho encontrado que existe
+        $actualSourcePath = $expandedPath | Select-Object -First 1
 
         if (Test-Path $actualSourcePath) {
             Write-Host "  Encontrado em: $actualSourcePath"
@@ -92,87 +75,44 @@ function Process-Package {
             Copy-Item -Path "$actualSourcePath\*" -Destination $destDir -Recurse -Force
             Write-Host "  >> Copiado $PackageName para $destDir" -ForegroundColor Green
 
-            $licenseFile = Get-ChildItem -Path $actualSourcePath -Include $LicenseSearchPattern -File -Recurse | Select-Object -First 1
+            # Lógica de licença (simplificada)
+            $licenseFile = Get-ChildItem -Path $actualSourcePath -Include $LicenseSearchPattern -File -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($licenseFile) {
                 $licenseDest = Join-Path $licensesDir "$($PackageName)_LICENSE.txt"
                 Copy-Item -Path $licenseFile.FullName -Destination $licenseDest -Force
                 Write-Host "  >> Licença copiada para $licenseDest" -ForegroundColor Green
-            } else {
-                Write-Host "  >> Arquivo de licença não encontrado para $PackageName (normal em CI)" -ForegroundColor Yellow
-                # Não adicionar ao MISSING_LICENSES.txt em ambiente CI
-                # Add-Content -Path $missingLicensesFile -Value "$($PackageName): arquivo de licença não encontrado."
             }
             $found = $true
-            break
+            break # Para de procurar assim que encontrar um caminho válido
         }
     }
 
     if (-not $found) {
-        Write-Host "  >> Pacote $PackageName não encontrado - será usado modo limitado" -ForegroundColor Yellow
-        # Em ambiente CI, não contar como erro crítico
-        # Add-Content -Path $missingLicensesFile -Value "$($PackageName): pacote não encontrado."
-        # $global:errorCount++
+        Write-Warning "  >> Pacote $PackageName não encontrado nos caminhos esperados."
     }
 }
 
 # --- Mapeamento de pacotes e caminhos de busca ---
 $chocoLibPath = "C:\ProgramData\chocolatey\lib"
 
+# Caminhos mais robustos e específicos para cada ferramenta
 $packages = @{
-    qpdf           = @(
-        (Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin"),
-        (Join-Path $chocoLibPath "qpdf\tools\bin"),
-        "C:\ProgramData\chocolatey\bin"
-    )
-    poppler        = @(
-        (Join-Path $chocoLibPath "poppler\tools\poppler*\bin"),
-        (Join-Path $chocoLibPath "poppler\tools\bin"),
-        "C:\ProgramData\chocolatey\bin"
-    )
-    'pdftk-server' = @(
-        (Join-Path "$env:ProgramFiles(x86)" "PDFtk Server\bin"),
-        (Join-Path $chocoLibPath "pdftk-server\tools\bin"),
-        "C:\ProgramData\chocolatey\bin"
-    )
-    tesseract      = @(
-        (Join-Path "$env:ProgramFiles(x86)" "Tesseract-OCR"),
-        (Join-Path $chocoLibPath "tesseract\tools\bin"),
-        "C:\ProgramData\chocolatey\bin"
-    )
-    ghostscript    = @(
-        (Join-Path "$env:ProgramFiles(x86)" "gs\gs*\bin"),
-        (Join-Path $chocoLibPath "ghostscript\tools\gs*\bin"),
-        (Join-Path $chocoLibPath "ghostscript\tools\bin"),
-        "C:\ProgramData\chocolatey\bin"
-    )
-    mupdf          = @(
-        (Join-Path $chocoLibPath "mupdf\tools"),
-        (Join-Path $chocoLibPath "mupdf\tools\mupdf*"),
-        (Join-Path $chocoLibPath "mupdf"),
-        "C:\ProgramData\chocolatey\bin"
-    )
+    qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\bin") }
+    poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin") }
+    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path $chocoLibPath "pdftk-server\tools\bin") }
+    tesseract      = @{ Dest = "tesseract";   Paths = @(Join-Path $chocoLibPath "tesseract\tools") }
+    ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "ghostscript\tools\gs*\bin") }
+    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools") }
 }
 
 # --- Processamento dos pacotes ---
 foreach ($pkgName in $packages.Keys) {
-    $destName = if ($pkgName -eq "pdftk-server") { "pdftk" } else { $pkgName }
-    Process-Package -PackageName $pkgName -DestSubFolder $destName -SourcePaths $packages[$pkgName]
+    $pkgInfo = $packages[$pkgName]
+    Process-Package -PackageName $pkgName -DestSubFolder $pkgInfo.Dest -SourcePaths $pkgInfo.Paths
 }
 
 # --- Verificação final ---
 Write-Host "`n=========================================" -ForegroundColor Cyan
-Write-Host "  Verificação Final" -ForegroundColor Cyan
+Write-Host "  Verificação Final do Conteúdo" -ForegroundColor Cyan
 Write-Host "========================================="
-
-if ($global:errorCount -gt 0) {
-    Write-Host "Info: $($global:errorCount) dependencia(s) nao encontrada(s) - build continuara com funcionalidades limitadas." -ForegroundColor Yellow
-    Write-Host "Build prosseguindo normalmente..." -ForegroundColor Green
-    # Nao criar arquivo MISSING_LICENSES.txt em CI
-    # Verificar se o arquivo existe e remove-lo se estiver vazio
-    if ((Test-Path $missingLicensesFile) -and ((Get-Content $missingLicensesFile).Count -le 1)) {
-        Remove-Item $missingLicensesFile -ErrorAction SilentlyContinue
-    }
-} else {
-    Write-Host "Todas as dependencias foram preparadas com sucesso." -ForegroundColor Green
-    Remove-Item $missingLicensesFile -ErrorAction SilentlyContinue
-}
+Get-ChildItem -Path $thirdPartyDir -Recurse
