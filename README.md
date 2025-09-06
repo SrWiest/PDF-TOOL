@@ -143,14 +143,3 @@ pdf_merge_tool_win_full.exe arquivo_corrompido.pdf --prefer-libreoffice
 
 ## Licença
 Consulte o arquivo LICENSE e a seção de terceiros em `licenses/THIRD_PARTY_LICENSES.txt`.
-
-# Test commit after clean history
-# CircleCI test commit
-# Test: Only CircleCI active
-# CircleCI Build Test vie 05 sep 2025 11:21:45 -03
-# Test CircleCI with fixed Windows config
-# Trigger pre-release build
-# Test improved dependency installation
-# Test PowerShell syntax fix
-# Test GitHub release fix
-# Teste para acionar a release no CircleCI

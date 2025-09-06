@@ -184,7 +184,7 @@ def build_parser():
     p.add_argument("--ocr-output-type", choices=["pdf", "pdfa"], default="pdf", help="Tipo de saída do OCR.")
     p.add_argument("--ocr-optimize-level", type=int, choices=[0, 1, 2, 3], default=1, help="Nível de otimização do OCR.")
     p.add_argument("--prefer-libreoffice", action="store_true", help="Tenta LibreOffice primeiro para recuperação.")
-    p.add_argument("--version", "-v", action="version", version="PDF Merge Tool v2.0")
+    p.add_argument("--version", "-v", action="version", version=f"PDF Merge Tool {get_version_info().upper()}")
     return p
 
 def main_logic(args):
@@ -212,6 +212,7 @@ def main_logic(args):
     log.info(f"  ✔️ União concluída. Total de páginas: {total_pg}. Páginas em branco removidas: {removed_pg}")
     
     working_file = temp_merge
+    temp_ocr = None
     if not args.no_ocr:
         temp_ocr = final_name.with_name(f"{final_name.stem}_temp_ocr.pdf")
         ok_ocr, msg = run_ocr_api(working_file, temp_ocr, args)
@@ -228,7 +229,8 @@ def main_logic(args):
 
     # Limpeza de arquivos temporários e recuperados
     files_to_clean = [temp_merge] + ok_files
-    if 'temp_ocr' in locals(): files_to_clean.append(temp_ocr)
+    if temp_ocr and temp_ocr.exists():
+        files_to_clean.append(temp_ocr)
     for f in files_to_clean:
         if f.exists() and any(s in f.name for s in [".gs.pdf", ".qpdf.pdf", ".mutool.pdf", ".pdftk.pdf", ".imagem.pdf", ".libreoffice.pdf", "_temp_"]):
             try:
