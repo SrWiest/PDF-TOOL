@@ -111,6 +111,7 @@ jobs:
             if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
               Write-Host "Instalando GitHub CLI..." -ForegroundColor Yellow
               choco install gh --yes
+              refreshenv
             }
 
             # Check if GITHUB_TOKEN is available
