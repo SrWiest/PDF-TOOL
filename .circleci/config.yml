@@ -91,6 +91,11 @@ jobs:
             $version = $env:PMT_BUILD_VERSION
             Write-Host "Arquivo spec: $spec"
             Write-Host "Versão: $version"
+            
+            # Verificar conteúdo do arquivo antes de compilar
+            Write-Host "Verificando conteúdo do arquivo .iss..."
+            Get-Content $spec | Select-Object -First 35
+            
             if (Test-Path $spec) {
               Write-Host "Executando ISCC..."
               & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" $spec
