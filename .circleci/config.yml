@@ -141,13 +141,8 @@ jobs:
             Esta é uma versão de pré-lançamento para testes.
             "@
 
-              # Create the release
-              gh release create "$env:CIRCLE_TAG" \
-                --title "PDF Tool Medium $env:CIRCLE_TAG" \
-                --notes $releaseNotes \
-                --prerelease \
-                dist/pdf_merge_tool_win_medium.exe \
-                installer/PDFMergeTool-Medium-Setup.exe
+              # Create the release in a single line to avoid PowerShell parser errors
+              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium.exe installer/PDFMergeTool-Medium-Setup.exe
 
               Write-Host "✅ Release $env:CIRCLE_TAG criada com sucesso!" -ForegroundColor Green
             } else {
