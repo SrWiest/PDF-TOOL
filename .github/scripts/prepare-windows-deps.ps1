@@ -112,11 +112,11 @@ $programFiles = "C:\Program Files" # For Ghostscript
 
 $packages = @{
     qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
-    poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin"), @(Join-Path $chocoLibPath "poppler\tools") } # Added fallback
+    poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin"), @(Join-Path $chocoLibPath "poppler\tools\Library\bin") } # Added Library/bin
     'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") }
     # tesseract is handled manually
     ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $programFiles "gs\gs*\bin"), @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
-    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*"), @(Join-Path $chocoLibPath "mupdf\tools") } # Added fallback
+    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools"), @(Join-Path $chocoLibPath "mupdf\tools\mupdf*") } # Added tools directly
 }
 
 # --- Processamento dos pacotes ---

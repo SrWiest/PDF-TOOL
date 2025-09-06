@@ -217,16 +217,14 @@ def main_logic(args):
             working_file = temp_ocr
         else:
             log.warning(f"  ⚠️ Falha no OCR: {msg}. Continuando sem OCR.")
-            if temp_ocr.exists():
-                temp_ocr.unlink()
+            if temp_ocr.exists(): temp_ocr.unlink()
     
     log.info(f"Salvando resultado final em: {final_name}")
     working_file.rename(final_name)
 
     # Limpeza de arquivos temporários e recuperados
     files_to_clean = [temp_merge] + ok_files
-    if 'temp_ocr' in locals():
-        files_to_clean.append(temp_ocr)
+    if 'temp_ocr' in locals(): files_to_clean.append(temp_ocr)
     for f in files_to_clean:
         if f.exists() and any(s in f.name for s in [".gs.pdf", ".qpdf.pdf", ".mutool.pdf", ".pdftk.pdf", ".imagem.pdf", ".libreoffice.pdf", "_temp_"]):
             try:
