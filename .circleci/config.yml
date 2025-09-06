@@ -143,7 +143,7 @@ jobs:
             "@
 
               # Create the release in a single line to avoid PowerShell parser errors
-              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium.exe installer/Output/PDFMergeTool-Medium-Setup.exe
+              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium/pdf_merge_tool_win_medium.exe installer/Output/PDFMergeTool-Medium-Setup.exe
 
               Write-Host "✅ Release $env:CIRCLE_TAG criada com sucesso!" -ForegroundColor Green
             } else {
