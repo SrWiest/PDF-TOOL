@@ -113,7 +113,7 @@ $programFiles = "C:\Program Files" # For Ghostscript
 $packages = @{
     qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
     poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin"), @(Join-Path $chocoLibPath "poppler\tools") } # Added fallback
-    pdftk-server = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") }
+    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") }
     # tesseract is handled manually
     ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $programFiles "gs\gs*\bin"), @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
     mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*"), @(Join-Path $chocoLibPath "mupdf\tools") } # Added fallback
@@ -130,4 +130,3 @@ Write-Host "`n=========================================" -ForegroundColor Cyan
 Write-Host "  Verificação Final do Conteúdo" -ForegroundColor Cyan
 Write-Host "========================================="
 Get-ChildItem -Path $thirdPartyDir -Recurse
-
