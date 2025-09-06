@@ -64,7 +64,7 @@ $tesseractZip = Join-Path $PSScriptRoot "tesseract-ocr-3.02-win32-portable.zip"
 $tesseractDest = Join-Path $thirdPartyDir "tesseract"
 
 try {
-    curl -L $tesseractUrl -o $tesseractZip # Use curl with -L for redirects
+    Invoke-WebRequest -Uri $tesseractUrl -OutFile $tesseractZip -FollowRelocation # Use -FollowRelocation for redirects
     Expand-Archive -Path $tesseractZip -Destination $tesseractDest -Force
     Remove-Item $tesseractZip # Clean up the zip file
     Write-Host "  ✅ Tesseract portátil baixado e extraído com sucesso." -ForegroundColor Green
@@ -111,7 +111,7 @@ $chocoLibPath = "C:\ProgramData\chocolatey\lib"
 $packages = @{
     qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
     poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin") }
-    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path $env:ProgramFiles(x86) "PDFtk Server\bin") }
+    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") } # Corrected syntax
     # tesseract is handled manually
     ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
     mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*") }
