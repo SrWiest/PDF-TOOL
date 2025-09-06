@@ -1,7 +1,6 @@
 # Script para limpar processos do LibreOffice travados
 # Usado após timeouts para garantir que não fiquem processos órfãos
 
-import subprocess
 import time
 import psutil
 

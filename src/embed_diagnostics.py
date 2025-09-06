@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 # PDF Merge Tool - Copyright (c) 2025 SrWiest
 # Licença: Consulte LICENSE e THIRD_PARTY_LICENSES.txt
-import shutil, subprocess, os, json
+import shutil
+import subprocess
+import os
+import json
 
 def _which_any(*names):
     for n in names:
@@ -72,5 +75,4 @@ def print_status_as_table():
         print(f"{k}={v}")
 
 def print_status_json():
-    import json
     print(json.dumps(tool_status(), indent=2, ensure_ascii=False))

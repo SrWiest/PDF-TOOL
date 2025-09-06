@@ -45,11 +45,13 @@ def exporta_pdf_ghostscript(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"Ghostscript falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com Ghostscript falhou: {e}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_qpdf(src: Path, dst: Path) -> bool:
@@ -61,11 +63,13 @@ def exporta_pdf_qpdf(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"qpdf falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com qpdf falhou: {e}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_mutool(src: Path, dst: Path) -> bool:
@@ -77,11 +81,13 @@ def exporta_pdf_mutool(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"mutool falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com mutool falhou: {e}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_pdftk(src: Path, dst: Path) -> bool:
@@ -93,11 +99,13 @@ def exporta_pdf_pdftk(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"pdftk falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com pdftk falhou: {e}")
-        if dst.exists(): dst.unlink(missing_ok=True)
+        if dst.exists():
+            dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_como_imagem(src: Path, dst: Path, dpi: int = 250) -> bool:

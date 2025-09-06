@@ -1,4 +1,7 @@
-import os, sys, pathlib, shutil, subprocess
+import os
+import sys
+import pathlib
+import shutil
 
 def _log(msg):
     # Silencioso em produção? Se quiser menos ruído, comente o print.

@@ -12,4 +12,4 @@ venv/
 *.exe
 
 # Downloaded dependencies
-third_party_full/
+third_party_full/modelcontextprotocol/

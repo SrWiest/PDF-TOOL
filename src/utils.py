@@ -19,9 +19,12 @@ def get_version_info() -> str:
     """Detecta a versão (lite, medium, full) baseada no nome do executável."""
     if is_frozen():
         exe_name = Path(sys.executable).name.lower()
-        if 'lite' in exe_name: return 'lite'
-        if 'medium' in exe_name: return 'medium'
-        if 'full' in exe_name: return 'full'
+        if 'lite' in exe_name:
+            return 'lite'
+        if 'medium' in exe_name:
+            return 'medium'
+        if 'full' in exe_name:
+            return 'full'
     return 'development'
 
 def get_executable_path(name: str) -> str:
