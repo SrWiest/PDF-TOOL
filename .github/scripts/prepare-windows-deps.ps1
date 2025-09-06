@@ -58,11 +58,10 @@ catch {
 $thirdPartyDir = "third_party_full"
 $licensesDir = "licenses"
 
-# Limpa diretórios antigos para garantir um build limpo
+# Limpa diretório de build para garantir um build limpo, mas preserva o diretório de licenças que vem do Git
 if (Test-Path $thirdPartyDir) { Remove-Item -Recurse -Force $thirdPartyDir }
-if (Test-Path $licensesDir) { Remove-Item -Recurse -Force $licensesDir }
 New-Item -ItemType Directory -Force -Path $thirdPartyDir | Out-Null
-New-Item -ItemType Directory -Force -Path $licensesDir | Out-Null
+New-Item -ItemType Directory -Force -Path $licensesDir | Out-Null # Apenas garante que existe
 
 # --- Função auxiliar para processar pacotes ---
 function Process-Package {
