@@ -20,7 +20,6 @@ try {
     # Pacotes que não suportam ou não precisam da flag --x86
     $choco_packages_any = @(
         "poppler",
-        "tesseract",
         "mupdf",
         "vcredist140",
         "pdftk-server"
@@ -57,6 +56,21 @@ $licensesDir = "licenses"
 if (Test-Path $thirdPartyDir) { Remove-Item -Recurse -Force $thirdPartyDir }
 New-Item -ItemType Directory -Force -Path $thirdPartyDir | Out-Null
 New-Item -ItemType Directory -Force -Path $licensesDir | Out-Null # Apenas garante que existe
+
+# --- Manual Tesseract Download and Extraction ---
+Write-Host "`n--- Baixando e extraindo Tesseract (portátil) ---" -ForegroundColor Cyan
+$tesseractUrl = "https://sourceforge.net/projects/tesseract-ocr-alternative/files/tesseract-ocr-3.02-win32-portable.zip/download"
+$tesseractZip = Join-Path $PSScriptRoot "tesseract-ocr-3.02-win32-portable.zip"
+$tesseractDest = Join-Path $thirdPartyDir "tesseract"
+
+try {
+    Invoke-WebRequest -Uri $tesseractUrl -OutFile $tesseractZip
+    Expand-Archive -Path $tesseractZip -Destination $tesseractDest -Force
+    Remove-Item $tesseractZip # Clean up the zip file
+    Write-Host "  ✅ Tesseract portátil baixado e extraído com sucesso." -ForegroundColor Green
+} catch {
+    Write-Warning "Falha ao baixar ou extrair Tesseract portátil. Erro: $($_.Exception.Message)"
+}
 
 # --- Função auxiliar para processar pacotes ---
 function Process-Package {
@@ -98,7 +112,7 @@ $packages = @{
     qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
     poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin") }
     'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path $env:ProgramFiles(x86) "PDFtk Server\bin") }
-    tesseract      = @{ Dest = "tesseract";   Paths = @(Join-Path $env:ProgramFiles "Tesseract-OCR") }
+    # tesseract is handled manually
     ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
     mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*") }
 }
