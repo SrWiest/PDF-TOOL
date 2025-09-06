@@ -73,6 +73,14 @@ jobs:
             Get-ChildItem third_party_full -Recurse -ErrorAction SilentlyContinue
 
       - run:
+          name: DEBUG - List contents of third_party_full
+          shell: powershell.exe -ExecutionPolicy Bypass
+          command: |
+            Write-Host "--- DEBUG: Listing contents of third_party_full ---" -ForegroundColor Red
+            Get-ChildItem -Path "third_party_full" -Recurse
+            Write-Host "--- END DEBUG ---" -ForegroundColor Red
+
+      - run:
           name: Build Medium executable with PyInstaller
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
