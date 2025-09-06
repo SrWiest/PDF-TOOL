@@ -27,6 +27,7 @@ def tool_status():
     status["ghostscript_cmd"] = gs_name or ""
 
     status["tesseract_exe"] = has("tesseract")
+    status["pdftk_exe"] = has("pdftk")
     status["TESSDATA_PREFIX"] = os.environ.get("TESSDATA_PREFIX", "")
 
     # Bibliotecas Python
@@ -62,6 +63,10 @@ def tool_status():
         ok, out = safe_run(["tesseract", "--version"])
         status["tesseract_version_ok"] = ok
         status["tesseract_version_head"] = out
+    if status["pdftk_exe"]:
+        ok, out = safe_run(["pdftk", "--version"])
+        status["pdftk_version_ok"] = ok
+        status["pdftk_version_head"] = out
 
     return status
 

@@ -45,13 +45,11 @@ def exporta_pdf_ghostscript(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"Ghostscript falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com Ghostscript falhou: {e}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_qpdf(src: Path, dst: Path) -> bool:
@@ -63,31 +61,31 @@ def exporta_pdf_qpdf(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"qpdf falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com qpdf falhou: {e}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_mutool(src: Path, dst: Path) -> bool:
     log.debug(f"Tentando recuperação de {src.name} com mutool...")
     try:
-        mutool_exe = get_executable_path("mutool")
+        try:
+            mutool_exe = get_executable_path("mutool")
+        except FileNotFoundError:
+            log.warning("Recuperação com mutool pulada: executável não encontrado.")
+            return False
         cmd = [mutool_exe, "clean", str(src.absolute()), str(dst)]
         result = run_command(cmd, timeout=60)
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"mutool falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com mutool falhou: {e}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_pdftk(src: Path, dst: Path) -> bool:
@@ -99,13 +97,11 @@ def exporta_pdf_pdftk(src: Path, dst: Path) -> bool:
         if result.returncode == 0 and verifica_pdf(dst):
             return True
         log.debug(f"pdftk falhou. Stderr: {result.stderr.strip()}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
     except (FileNotFoundError, Exception) as e:
         log.warning(f"Recuperação com pdftk falhou: {e}")
-        if dst.exists():
-            dst.unlink(missing_ok=True)
+        if dst.exists(): dst.unlink(missing_ok=True)
         return False
 
 def exporta_pdf_como_imagem(src: Path, dst: Path, dpi: int = 250) -> bool:
@@ -115,34 +111,38 @@ def exporta_pdf_como_imagem(src: Path, dst: Path, dpi: int = 250) -> bool:
         return False
     
     try:
-        pdftoppm_exe = get_executable_path("pdftoppm")
-    except FileNotFoundError:
-        log.warning("Recuperação com imagem pulada: pdftoppm não encontrado.")
-        return False
-
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
-        page_pattern = temp_path / f"{src.stem}_page"
-        
-        cmd = [pdftoppm_exe, "-png", "-r", str(dpi), str(src.absolute()), str(page_pattern.absolute())]
-        result = run_command(cmd, timeout=120)
-
-        if result.returncode != 0:
-            log.debug(f"pdftoppm falhou. Stderr: {result.stderr.strip()}")
-            return False
-
-        png_files = sorted(glob.glob(f"{page_pattern}*.png"))
-        if not png_files:
-            log.debug("Nenhuma imagem PNG foi gerada pelo pdftoppm.")
-            return False
-
         try:
-            with open(dst, "wb") as f:
-                f.write(img2pdf.convert(png_files))
-            return dst.exists() and verifica_pdf(dst)
-        except Exception as e:
-            log.error(f"Falha ao converter imagens para PDF com img2pdf: {e}")
+            pdftoppm_exe = get_executable_path("pdftoppm")
+        except FileNotFoundError:
+            log.warning("Recuperação com imagem pulada: pdftoppm não encontrado.")
             return False
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            page_pattern = temp_path / f"{src.stem}_page"
+            
+            cmd = [pdftoppm_exe, "-png", "-r", str(dpi), str(src.absolute()), str(page_pattern.absolute())]
+            result = run_command(cmd, timeout=120)
+
+            if result.returncode != 0:
+                log.debug(f"pdftoppm falhou. Stderr: {result.stderr.strip()}")
+                return False
+
+            png_files = sorted(glob.glob(f"{page_pattern}*.png"))
+            if not png_files:
+                log.debug("Nenhuma imagem PNG foi gerada pelo pdftoppm.")
+                return False
+
+            try:
+                with open(dst, "wb") as f:
+                    f.write(img2pdf.convert(png_files))
+                return dst.exists() and verifica_pdf(dst)
+            except Exception as e:
+                log.error(f"Falha ao converter imagens para PDF com img2pdf: {e}")
+                return False
+    except Exception as e:
+        log.error(f"Erro inesperado durante a recuperação com imagem: {e}")
+        return False
 
 def _find_soffice_executable() -> str:
     """Encontra o executável do LibreOffice, embutido ou no sistema."""

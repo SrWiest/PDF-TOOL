@@ -1,20 +1,32 @@
 version: 2.1
 
+orbs:
+  windows: circleci/windows@5.0
+
 workflows:
   build-and-release:
     jobs:
-      - build_medium:
+      - build-windows:
+          name: build-medium
+          build-type: "medium"
+          pyinstaller-spec: "specs/pdf_merge_medium.spec"
+          requirements-file: "requirements/requirements-medium.txt"
           filters:
-            tags:
-              only: /^v.*/  # Match any tag starting with 'v'
             branches:
-              ignore: /.*/
+              only: main
 
 jobs:
-  build_medium:
-    machine:
-      image: windows-server-2022-gui:current
-    resource_class: windows.medium
+  build-windows:
+    executor: windows/default
+    parameters:
+      build-type:
+        type: string
+      pyinstaller-spec:
+        type: string
+      requirements-file:
+        type: string
+    environment:
+      PMT_BUILD_VERSION: << parameters.build-type >>-${CIRCLE_BUILD_NUM}
     steps:
       - checkout
 
@@ -22,14 +34,14 @@ jobs:
           name: Setup Python 3.11
           command: |
             choco install python311 --yes
-            export PATH="/c/Python311:/c/Python311/Scripts:$PATH"
+            echo 'export PATH="/c/Python311:/c/Python311/Scripts:$PATH"' >> $BASH_ENV
             python -m pip install --upgrade pip setuptools wheel
 
       - run:
           name: Install Python dependencies
           command: |
             pip install pyinstaller
-            pip install -r requirements/requirements-medium.txt
+            pip install -r << parameters.requirements-file >>
             pip freeze
 
       - run:
@@ -37,47 +49,30 @@ jobs:
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Preparando ferramentas externas..." -ForegroundColor Green
-            Write-Host "Instalando dependências adicionais para versão Medium..." -ForegroundColor Cyan
-
-            # Instalar ferramentas adicionais necessárias para Medium
-            $tools = @("qpdf", "poppler", "tesseract", "ghostscript", "mupdf")
+            $tools = @("qpdf", "poppler", "tesseract", "ghostscript", "mupdf", "pdftk-free")
             foreach ($tool in $tools) {
               Write-Host "Instalando $tool..." -ForegroundColor Yellow
               try {
                 choco install $tool --yes --no-progress --force --force-dependencies
-                Write-Host "✅ $tool instalado com sucesso" -ForegroundColor Green
               } catch {
                 Write-Warning "Falha ao instalar $tool via Chocolatey: $($_.Exception.Message)"
               }
             }
-
-            # Executar script de preparação
-            .\.github\scripts\prepare-windows-deps.ps1
-
-      - run:
-          name: Prepare Image Tools (Poppler, ImageMagick)
-          shell: powershell.exe -ExecutionPolicy Bypass
-          command: |
-            Write-Host "Configurando ferramentas de imagem..." -ForegroundColor Green
-            try {
-              .\.github\scripts\prepare-image-tools-deps.ps1
-            } catch {
-              Write-Host "Erro configurando image tools. Continuando sem elas..." -ForegroundColor Yellow
-            }
+            Write-Host "✅ Instalação de ferramentas externas concluída." -ForegroundColor Green
 
       - run:
           name: Verify tools setup
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Verificando ferramentas instaladas..." -ForegroundColor Cyan
-            Get-ChildItem third_party_full -Recurse -ErrorAction SilentlyContinue
+              python -c "from src.embed_diagnostics import print_status_as_table; print_status_as_table()"
 
       - run:
-          name: Build Medium executable with PyInstaller
+          name: Build << parameters.build-type >> executable with PyInstaller
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Construindo executável com PyInstaller..." -ForegroundColor Green
-            pyinstaller specs/pdf_merge_medium.spec --clean
+            pyinstaller << parameters.pyinstaller-spec >> --clean
 
       - run:
           name: Setup Inno Setup
@@ -91,7 +86,12 @@ jobs:
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Criando instalador Windows..." -ForegroundColor Green
-            ISCC.exe installer/install_medium.iss
+            $spec = "installer/install_<< parameters.build-type >>.iss"
+            if (Test-Path $spec) {
+              & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" $spec
+            } else {
+              Write-Warning "Arquivo de spec do Inno Setup não encontrado: $spec"
+            }
 
       - store_artifacts:
           path: dist/
@@ -102,51 +102,93 @@ jobs:
           destination: installers
 
       - run:
-          name: Create GitHub Release
+          name: Create GitHub Pre-Release
           shell: powershell.exe -ExecutionPolicy Bypass
+          when: on_success
           command: |
-            Write-Host "Criando release no GitHub para o tag $env:CIRCLE_TAG" -ForegroundColor Green
+            Write-Host "Iniciando criação de pre-release no GitHub..." -ForegroundColor Green
 
-            # Install GitHub CLI if not available
-            if (!(Get-Command gh -ErrorAction SilentlyContinue)) {
+            # Instala o GitHub CLI se não estiver presente
+            if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
               Write-Host "Instalando GitHub CLI..." -ForegroundColor Yellow
-              choco install gh --yes
-              refreshenv
+              choco install gh --yes --no-progress
             }
 
-            # Check if GITHUB_TOKEN is available
+            # Verifica se o token do GitHub está disponível
             if ($env:GITHUB_TOKEN) {
-              Write-Host "Autenticando com GitHub..." -ForegroundColor Cyan
+              Write-Host "Autenticando no GitHub..." -ForegroundColor Cyan
               echo $env:GITHUB_TOKEN | gh auth login --with-token
 
-              Write-Host "Criando release para o tag $env:CIRCLE_TAG..." -ForegroundColor Green
-              $releaseNotes = @"
-            ## PDF Tool Medium $env:CIRCLE_TAG
+              $releaseTag = "v$($env:PMT_BUILD_VERSION)"
+              $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
+              $installerName = "PDFMergeTool-$(<< parameters.build-type >>)-Setup.exe"
+              $exeName = "pdf_merge_tool_win_$(<< parameters.build-type >>).exe"
+              
+              $installerPath = "installer/Output/$installerName"
+              $exePath = "dist/$exeName"
 
-            ### ✅ Build Automático
-            - Gerado automaticamente pelo CircleCI
-            - Plataforma: Windows Server 2022
-            - Python: 3.11
-
-            ### 📦 Conteúdo
-            - Executável standalone (pdf_merge_tool_win_medium.exe)
-            - Instalador Windows (PDF_Tool_Medium_Setup.exe)
-
-            ### 🔧 Funcionalidades
-            - Merge de PDFs
-            - OCR com Tesseract
-            - Processamento de imagens
-            - Recuperação de PDFs danificados
-
-            ### ⚠️ Pre-release
-            Esta é uma versão de pré-lançamento para testes.
-            "@
-
-              # Create the release in a single line to avoid PowerShell parser errors
-              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium/pdf_merge_tool_win_medium.exe installer/Output/PDFMergeTool-Medium-Setup.exe
-
-              Write-Host "✅ Release $env:CIRCLE_TAG criada com sucesso!" -ForegroundColor Green
+              # Verifica se os artefatos existem antes de criar a release
+              if ((Test-Path $installerPath) -and (Test-Path $exePath)) {
+                Write-Host "Criando pre-release '$releaseTag' com os artefatos..." -ForegroundColor Green
+                gh release create $releaseTag `
+                  --title $releaseTitle `
+                  --notes "Build automático gerado pelo CircleCI. Versão: $(<< parameters.build-type >>)" `
+                  --prerelease `
+                  $exePath `
+                  $installerPath
+                
+                Write-Host "✅ Pre-release criada com sucesso!" -ForegroundColor Green
+              } else {
+                Write-Warning "⚠️  Um ou mais artefatos não foram encontrados. Pulando criação da release."
+                Write-Warning "  - Instalador esperado: $installerPath"
+                Write-Warning "  - Executável esperado: $exePath"
+              }
             } else {
-              Write-Host "⚠️ GITHUB_TOKEN não configurado. Release não criado." -ForegroundColor Yellow
-              Write-Host "Configure GITHUB_TOKEN nas variáveis de ambiente do CircleCI" -ForegroundColor Yellow
+              Write-Warning "⚠️  Variável GITHUB_TOKEN não configurada no CircleCI. A pre-release não será criada."
+            }
+
+      - run:
+          name: Create GitHub Pre-Release
+          shell: powershell.exe -ExecutionPolicy Bypass
+          when: on_success
+          command: |
+            Write-Host "Iniciando criação de pre-release no GitHub..." -ForegroundColor Green
+
+            # Instala o GitHub CLI se não estiver presente
+            if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+              Write-Host "Instalando GitHub CLI..." -ForegroundColor Yellow
+              choco install gh --yes --no-progress
+            }
+
+            # Verifica se o token do GitHub está disponível
+            if ($env:GITHUB_TOKEN) {
+              Write-Host "Autenticando no GitHub..." -ForegroundColor Cyan
+              echo $env:GITHUB_TOKEN | gh auth login --with-token
+
+              $releaseTag = "v$($env:PMT_BUILD_VERSION)"
+              $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
+              $installerName = "PDFMergeTool-$(<< parameters.build-type >>)-Setup.exe"
+              $exeName = "pdf_merge_tool_win_$(<< parameters.build-type >>).exe"
+              
+              $installerPath = "installer/Output/$installerName"
+              $exePath = "dist/$exeName"
+
+              # Verifica se os artefatos existem antes de criar a release
+              if ((Test-Path $installerPath) -and (Test-Path $exePath)) {
+                Write-Host "Criando pre-release '$releaseTag' com os artefatos..." -ForegroundColor Green
+                gh release create $releaseTag `
+                  --title $releaseTitle `
+                  --notes "Build automático gerado pelo CircleCI. Versão: $(<< parameters.build-type >>)" `
+                  --prerelease `
+                  $exePath `
+                  $installerPath
+                
+                Write-Host "✅ Pre-release criada com sucesso!" -ForegroundColor Green
+              } else {
+                Write-Warning "⚠️  Um ou mais artefatos não foram encontrados. Pulando criação da release."
+                Write-Warning "  - Instalador esperado: $installerPath"
+                Write-Warning "  - Executável esperado: $exePath"
+              }
+            } else {
+              Write-Warning "⚠️  Variável GITHUB_TOKEN não configurada no CircleCI. A pre-release não será criada."
             }

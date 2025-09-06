@@ -154,10 +154,16 @@ def run_ocr_api(src: Path, dst: Path, args) -> Tuple[bool, str]:
         os.environ['PATH'] = f"{Path(gs_exe_path).parent};{Path(tesseract_exe_path).parent};{original_path}"
         
         log.info("Iniciando OCR...")
+        # A API do ocrmypdf espera argumentos nomeados (keyword arguments), não uma string de linha de comando.
+        # A chamada original estava passando os argumentos de forma incorreta.
         ocrmypdf.ocr(
-            src, dst, deskew=True, rotate_pages=True,
-            optimize=int(args.ocr_optimize_level),
-            output_type=args.ocr_output_type, force_ocr=args.force_ocr
+            input_file=src,
+            output_file=dst,
+            deskew=True,
+            rotate_pages=True,
+            optimize=args.ocr_optimize_level,
+            output_type=args.ocr_output_type,
+            force_ocr=args.force_ocr
         )
         return True, ""
     except Exception as e:
@@ -165,10 +171,8 @@ def run_ocr_api(src: Path, dst: Path, args) -> Tuple[bool, str]:
         return False, str(e)
     finally:
         os.environ['PATH'] = original_path
-        if 'OCRMYPDF_GHOSTSCRIPT' in os.environ:
-            del os.environ['OCRMYPDF_GHOSTSCRIPT']
-        if 'OCRMYPDF_TESSERACT' in os.environ:
-            del os.environ['OCRMYPDF_TESSERACT']
+        if 'OCRMYPDF_GHOSTSCRIPT' in os.environ: del os.environ['OCRMYPDF_GHOSTSCRIPT']
+        if 'OCRMYPDF_TESSERACT' in os.environ: del os.environ['OCRMYPDF_TESSERACT']
 
 def build_parser():
     p = argparse.ArgumentParser(description="Ferramenta para unir e processar arquivos PDF.")
@@ -250,7 +254,7 @@ def main():
         
     try:
         return main_logic(args)
-    except Exception:
+    except Exception as e:
         log.critical("--- ERRO INESPERADO E FATAL ---", exc_info=True)
         if is_frozen():
             input("\nO PROGRAMA FALHOU. Pressione Enter para fechar...")
