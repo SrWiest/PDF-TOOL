@@ -8,7 +8,7 @@ workflows:
             tags:
               only: /^v[0-9]+(\.[0-9]+){2}(-.+)?$/  # Regex for semver tags e.g. v1.2.3 or v1.2.3-alpha.1
             branches:
-              ignore: ".*"
+              ignore: /.*/
 
 jobs:
   build_medium:
@@ -143,7 +143,7 @@ jobs:
             "@
 
               # Create the release in a single line to avoid PowerShell parser errors
-              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium.exe installer/PDFMergeTool-Medium-Setup.exe
+              gh release create "$env:CIRCLE_TAG" --title "PDF Tool Medium $env:CIRCLE_TAG" --notes $releaseNotes --prerelease dist/pdf_merge_tool_win_medium.exe installer/Output/PDFMergeTool-Medium-Setup.exe
 
               Write-Host "✅ Release $env:CIRCLE_TAG criada com sucesso!" -ForegroundColor Green
             } else {
