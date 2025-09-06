@@ -4,6 +4,7 @@
 import os
 import sys
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files
 
 # Get the base directory
 if '__file__' in globals():
@@ -23,6 +24,9 @@ datas = [
     (str(BASE_DIR / 'LICENSE'), '.'),
     (str(BASE_DIR / 'licenses' / 'THIRD_PARTY_LICENSES.txt'), 'licenses'),
 ]
+
+# Add ocrmypdf data files
+datas += collect_data_files('ocrmypdf')
 
 # Add third_party_full for medium version (excluding LibreOffice)
 third_party_dir = BASE_DIR / 'third_party_full'
