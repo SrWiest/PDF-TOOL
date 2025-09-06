@@ -89,10 +89,20 @@ jobs:
             $buildType = "<< parameters.build-type >>"
             $spec = "installer/install_$buildType.iss"
             $version = $env:PMT_BUILD_VERSION
+            Write-Host "Arquivo spec: $spec"
+            Write-Host "Versão: $version"
             if (Test-Path $spec) {
+              Write-Host "Executando ISCC..."
               & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" $spec
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ Instalador criado com sucesso!"
+              } else {
+                Write-Warning "❌ Falha ao criar instalador. Código de saída: $LASTEXITCODE"
+                exit 1
+              }
             } else {
               Write-Warning "Arquivo de spec do Inno Setup não encontrado: $spec"
+              exit 1
             }
 
       - store_artifacts:
