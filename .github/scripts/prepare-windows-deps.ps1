@@ -12,22 +12,37 @@ try {
         exit 1
     }
 
-    # Instalar pacotes um por um para melhor log e resiliência
-    $choco_packages = @(
+    # Forçar versão x86 para compatibilidade com executável de 32-bit
+    $choco_packages_x86 = @(
         "ghostscript",
         "qpdf",
         "poppler",
         "tesseract",
-        "mupdf",
+        "mupdf"
+    )
+    $choco_packages_any = @(
         "vcredist140",
         "pdftk-server"
     )
 
-    foreach ($pkg in $choco_packages) {
-        Write-Host "--- Instalando $pkg ---" -ForegroundColor Cyan
+    foreach ($pkg in $choco_packages_x86) {
+        Write-Host "--- Instalando $pkg (x86) ---"
         try {
-            # A flag --x86 não é confiável e pode não ser suportada por todos os pacotes.
-            # A maioria dos pacotes modernos lida com a arquitetura correta.
+            choco install $pkg --yes --no-progress --force --force-dependencies --x86
+        } catch {
+            Write-Warning "Falha ao instalar $pkg (x86). Tentando sem --x86..."
+            try {
+                choco install $pkg --yes --no-progress --force --force-dependencies
+                Write-Host "  ✅ $pkg instalado sem --x86" -ForegroundColor Green
+            } catch {
+                Write-Warning "Falha completa ao instalar $pkg. Continuando..."
+            }
+        }
+    }
+
+    foreach ($pkg in $choco_packages_any) {
+        Write-Host "--- Instalando $pkg ---"
+        try {
             choco install $pkg --yes --no-progress --force --force-dependencies
         } catch {
             Write-Warning "Falha ao instalar $pkg. Continuando..."
