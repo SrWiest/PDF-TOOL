@@ -64,7 +64,8 @@ $tesseractZip = Join-Path $PSScriptRoot "tesseract-ocr-3.02-win32-portable.zip"
 $tesseractDest = Join-Path $thirdPartyDir "tesseract"
 
 try {
-    Invoke-WebRequest -Uri $tesseractUrl -OutFile $tesseractZip -FollowRelocation # Use -FollowRelocation for redirects
+    $wc = New-Object System.Net.WebClient
+    $wc.DownloadFile($tesseractUrl, $tesseractZip) # Use WebClient for robust download
     Expand-Archive -Path $tesseractZip -Destination $tesseractDest -Force
     Remove-Item $tesseractZip # Clean up the zip file
     Write-Host "  ✅ Tesseract portátil baixado e extraído com sucesso." -ForegroundColor Green
@@ -107,14 +108,15 @@ function Process-Package {
 
 # --- Mapeamento de pacotes e caminhos de busca (CORRIGIDO) ---
 $chocoLibPath = "C:\ProgramData\chocolatey\lib"
+$programFiles = "C:\Program Files" # For Ghostscript
 
 $packages = @{
     qpdf           = @{ Dest = "qpdf";        Paths = @(Join-Path $chocoLibPath "qpdf\tools\qpdf*\bin") }
-    poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin") }
-    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") } # Corrected syntax
+    poppler        = @{ Dest = "poppler";     Paths = @(Join-Path $chocoLibPath "poppler\tools\poppler*\bin"), @(Join-Path $chocoLibPath "poppler\tools") } # Added fallback
+    'pdftk-server' = @{ Dest = "pdftk";       Paths = @(Join-Path ${env:ProgramFiles(x86)} "PDFtk Server\bin") }
     # tesseract is handled manually
-    ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") }
-    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*") }
+    ghostscript    = @{ Dest = "ghostscript"; Paths = @(Join-Path $programFiles "gs\gs*\bin"), @(Join-Path $chocoLibPath "Ghostscript\tools\gs*\bin") } # Added Program Files path
+    mupdf          = @{ Dest = "mupdf";       Paths = @(Join-Path $chocoLibPath "mupdf\tools\mupdf*"), @(Join-Path $chocoLibPath "mupdf\tools") } # Added fallback
 }
 
 # --- Processamento dos pacotes ---
