@@ -86,9 +86,11 @@ jobs:
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
             Write-Host "Criando instalador Windows..." -ForegroundColor Green
-            $spec = "installer/install_<< parameters.build-type >>.iss"
+            $buildType = "<< parameters.build-type >>"
+            $spec = "installer/install_$buildType.iss"
+            $version = $env:PMT_BUILD_VERSION
             if (Test-Path $spec) {
-              & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" $spec
+              & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/DMyAppVersion=$version" $spec
             } else {
               Write-Warning "Arquivo de spec do Inno Setup não encontrado: $spec"
             }
@@ -112,6 +114,8 @@ jobs:
             if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
               Write-Host "Instalando GitHub CLI..." -ForegroundColor Yellow
               choco install gh --yes --no-progress
+              # Atualiza o PATH após instalação
+              refreshenv
             }
 
             # Verifica se o token do GitHub está disponível
@@ -119,10 +123,11 @@ jobs:
               Write-Host "Autenticando no GitHub..." -ForegroundColor Cyan
               echo $env:GITHUB_TOKEN | gh auth login --with-token
 
+              $buildType = "<< parameters.build-type >>"
               $releaseTag = "v$($env:PMT_BUILD_VERSION)"
               $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
-              $installerName = "PDFMergeTool-$(<< parameters.build-type >>)-Setup.exe"
-              $exeName = "pdf_merge_tool_win_$(<< parameters.build-type >>).exe"
+              $installerName = "PDFMergeTool-$buildType-Setup.exe"
+              $exeName = "pdf_merge_tool_win_$buildType.exe"
               
               $installerPath = "installer/Output/$installerName"
               $exePath = "dist/$exeName"
@@ -132,7 +137,7 @@ jobs:
                 Write-Host "Criando pre-release '$releaseTag' com os artefatos..." -ForegroundColor Green
                 gh release create $releaseTag `
                   --title $releaseTitle `
-                  --notes "Build automático gerado pelo CircleCI. Versão: $(<< parameters.build-type >>)" `
+                  --notes "Build automático gerado pelo CircleCI. Versão: $buildType" `
                   --prerelease `
                   $exePath `
                   $installerPath
