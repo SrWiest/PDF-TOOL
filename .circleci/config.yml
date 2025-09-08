@@ -61,6 +61,35 @@ jobs:
             Write-Host "✅ Instalação de ferramentas externas concluída." -ForegroundColor Green
 
       - run:
+          name: Copy external tools to third_party_full
+          shell: powershell.exe -ExecutionPolicy Bypass
+          command: |
+            Write-Host "Copiando ferramentas externas para third_party_full..." -ForegroundColor Green
+            $thirdPartyDir = "third_party_full"
+            if (-not (Test-Path $thirdPartyDir)) {
+              New-Item -ItemType Directory -Path $thirdPartyDir
+            }
+            $chocoBin = "C:\ProgramData\chocolatey\bin"
+            $toolsToCopy = @(
+              "qpdf.exe",
+              "gswin64c.exe",
+              "mutool.exe",
+              "pdftk.exe",
+              "pdftoppm.exe",
+              "tesseract.exe"
+            )
+            foreach ($tool in $toolsToCopy) {
+              $sourcePath = Join-Path $chocoBin $tool
+              if (Test-Path $sourcePath) {
+                Copy-Item $sourcePath $thirdPartyDir
+                Write-Host "Copiado: $tool" -ForegroundColor Cyan
+              } else {
+                Write-Warning "Ferramenta não encontrada: $tool"
+              }
+            }
+            Write-Host "✅ Cópia de ferramentas concluída." -ForegroundColor Green
+
+      - run:
           name: Verify tools setup
           shell: powershell.exe -ExecutionPolicy Bypass
           command: |
