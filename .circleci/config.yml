@@ -168,7 +168,7 @@ jobs:
               echo $env:GITHUB_TOKEN | gh auth login --with-token
 
               $buildType = "<< parameters.build-type >>"
-              $releaseTag = "v$($env:PMT_BUILD_VERSION)"
+              $releaseTag = "v$($env:PMT_BUILD_VERSION)-$(Get-Date -Format 'yyyyMMddHHmmss')"
               $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
               $installerName = "PDFMergeTool-Medium-Setup.exe"
               $exeName = "pdf_merge_tool_win_$buildType"
