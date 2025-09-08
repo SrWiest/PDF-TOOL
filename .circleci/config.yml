@@ -141,7 +141,7 @@ jobs:
               $buildType = "<< parameters.build-type >>"
               $releaseTag = "v$($env:PMT_BUILD_VERSION)"
               $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
-              $installerName = "PDFMergeTool-$buildType-Setup.exe"
+              $installerName = "PDFMergeTool-Medium-Setup.exe"
               $exeName = "pdf_merge_tool_win_$buildType.exe"
               
               $installerPath = "installer/Output/$installerName"
