@@ -88,7 +88,7 @@ jobs:
             Write-Host "Criando instalador Windows..." -ForegroundColor Green
             $buildType = "<< parameters.build-type >>"
             $spec = "installer/install_$buildType.iss"
-            $version = $env:PMT_BUILD_VERSION
+            $version = $env:PMT_BUILD_VERSION -replace '\$\{CIRCLE_BUILD_NUM\}', $env:CIRCLE_BUILD_NUM
             Write-Host "Arquivo spec: $spec"
             Write-Host "Versão: $version"
             
