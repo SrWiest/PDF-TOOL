@@ -145,7 +145,7 @@ jobs:
               $exeName = "pdf_merge_tool_win_$buildType.exe"
               
               $installerPath = "installer/Output/$installerName"
-              $exePath = "dist/$exeName"
+              $exePath = "dist/$exeName/$exeName.exe"
 
               # Verifica se os artefatos existem antes de criar a release
               if ((Test-Path $installerPath) -and (Test-Path $exePath)) {
