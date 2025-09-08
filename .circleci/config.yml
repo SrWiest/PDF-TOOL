@@ -142,7 +142,7 @@ jobs:
               $releaseTag = "v$($env:PMT_BUILD_VERSION)"
               $releaseTitle = "PDF Tool $($env:PMT_BUILD_VERSION)"
               $installerName = "PDFMergeTool-Medium-Setup.exe"
-              $exeName = "pdf_merge_tool_win_$buildType.exe"
+              $exeName = "pdf_merge_tool_win_$buildType"
               
               $installerPath = "installer/Output/$installerName"
               $exePath = "dist/$exeName/$exeName.exe"
