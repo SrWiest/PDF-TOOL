@@ -69,22 +69,25 @@ jobs:
             if (-not (Test-Path $thirdPartyDir)) {
               New-Item -ItemType Directory -Path $thirdPartyDir
             }
-            $chocoBin = "C:\ProgramData\chocolatey\bin"
-            $toolsToCopy = @(
-              "qpdf.exe",
-              "gswin64c.exe",
-              "mutool.exe",
-              "pdftk.exe",
-              "pdftoppm.exe",
-              "tesseract.exe"
-            )
-            foreach ($tool in $toolsToCopy) {
-              $sourcePath = Join-Path $chocoBin $tool
+            $chocoLib = "C:\ProgramData\chocolatey\lib"
+            
+            # Define source paths for each tool
+            $toolPaths = @{
+              "qpdf.exe" = "$chocoLib\qpdf\tools\qpdf.exe"
+              "gswin64c.exe" = "$chocoLib\ghostscript\tools\bin\gswin64c.exe"
+              "mutool.exe" = "$chocoLib\mupdf\tools\mutool.exe"
+              "pdftk.exe" = "$chocoLib\pdftk-free\tools\pdftk.exe"
+              "pdftoppm.exe" = "$chocoLib\poppler\tools\bin\pdftoppm.exe"
+              "tesseract.exe" = "$chocoLib\tesseract\tools\tesseract.exe"
+            }
+            
+            foreach ($tool in $toolPaths.Keys) {
+              $sourcePath = $toolPaths[$tool]
               if (Test-Path $sourcePath) {
                 Copy-Item $sourcePath $thirdPartyDir
-                Write-Host "Copiado: $tool" -ForegroundColor Cyan
+                Write-Host "Copiado: $tool de $sourcePath" -ForegroundColor Cyan
               } else {
-                Write-Warning "Ferramenta não encontrada: $tool"
+                Write-Warning "Ferramenta não encontrada: $sourcePath"
               }
             }
             Write-Host "✅ Cópia de ferramentas concluída." -ForegroundColor Green
