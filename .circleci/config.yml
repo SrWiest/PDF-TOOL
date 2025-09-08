@@ -70,24 +70,30 @@ jobs:
               New-Item -ItemType Directory -Path $thirdPartyDir
             }
             $chocoLib = "C:\ProgramData\chocolatey\lib"
+            $chocoBin = "C:\ProgramData\chocolatey\bin"
             
-            # Define source paths for each tool
+            # Define source paths for each tool, primary lib, fallback bin
             $toolPaths = @{
-              "qpdf.exe" = "$chocoLib\qpdf\tools\qpdf.exe"
-              "gswin64c.exe" = "$chocoLib\ghostscript\tools\bin\gswin64c.exe"
-              "mutool.exe" = "$chocoLib\mupdf\tools\mutool.exe"
-              "pdftk.exe" = "$chocoLib\pdftk-free\tools\pdftk.exe"
-              "pdftoppm.exe" = "$chocoLib\poppler\tools\bin\pdftoppm.exe"
-              "tesseract.exe" = "$chocoLib\tesseract\tools\tesseract.exe"
+              "qpdf.exe" = @("$chocoLib\qpdf\tools\qpdf.exe", "$chocoBin\qpdf.exe")
+              "gswin64c.exe" = @("$chocoLib\ghostscript\tools\bin\gswin64c.exe", "$chocoBin\gswin64c.exe", "$chocoBin\gswin64.exe")
+              "mutool.exe" = @("$chocoLib\mupdf\tools\mutool.exe", "$chocoBin\mutool.exe")
+              "pdftk.exe" = @("$chocoLib\pdftk-free\tools\pdftk.exe", "$chocoBin\pdftk.exe")
+              "pdftoppm.exe" = @("$chocoLib\poppler\tools\bin\pdftoppm.exe", "$chocoBin\pdftoppm.exe")
+              "tesseract.exe" = @("$chocoLib\tesseract\tools\tesseract.exe", "$chocoBin\tesseract.exe")
             }
             
             foreach ($tool in $toolPaths.Keys) {
-              $sourcePath = $toolPaths[$tool]
-              if (Test-Path $sourcePath) {
-                Copy-Item $sourcePath $thirdPartyDir
-                Write-Host "Copiado: $tool de $sourcePath" -ForegroundColor Cyan
-              } else {
-                Write-Warning "Ferramenta não encontrada: $sourcePath"
+              $found = $false
+              foreach ($sourcePath in $toolPaths[$tool]) {
+                if (Test-Path $sourcePath) {
+                  Copy-Item $sourcePath $thirdPartyDir
+                  Write-Host "Copiado: $tool de $sourcePath" -ForegroundColor Cyan
+                  $found = $true
+                  break
+                }
+              }
+              if (-not $found) {
+                Write-Warning "Ferramenta não encontrada em nenhum local: $tool"
               }
             }
             Write-Host "✅ Cópia de ferramentas concluída." -ForegroundColor Green
