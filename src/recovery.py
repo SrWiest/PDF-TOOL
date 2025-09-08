@@ -39,7 +39,7 @@ def verifica_pdf(path: Path) -> bool:
 def exporta_pdf_ghostscript(src: Path, dst: Path) -> bool:
     log.debug(f"Tentando recuperação de {src.name} com Ghostscript...")
     try:
-        gs_exe = get_executable_path("gswin64")
+        gs_exe = get_executable_path("gs")
         cmd = [gs_exe, "-sDEVICE=pdfwrite", "-dPDFSETTINGS=/prepress", "-dNOPAUSE", "-dQUIET", "-dBATCH", f"-sOutputFile={dst}", str(src.absolute())]
         result = run_command(cmd, timeout=60)
         if result.returncode == 0 and verifica_pdf(dst):

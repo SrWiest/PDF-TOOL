@@ -146,7 +146,7 @@ def run_ocr_api(src: Path, dst: Path, args) -> Tuple[bool, str]:
         
     original_path = os.environ.get('PATH', '')
     try:
-        gs_exe_path = get_executable_path("gswin64")
+        gs_exe_path = get_executable_path("gs")
         tesseract_exe_path = get_executable_path("tesseract")
         
         os.environ['OCRMYPDF_GHOSTSCRIPT'] = gs_exe_path
