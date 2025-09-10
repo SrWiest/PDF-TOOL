@@ -212,7 +212,7 @@ def main():
     try:
         sys.exit(main_logic(args))
     except Exception as e:
-        log.critical("--- ERRO INESPERADO E FATAL ---", exc_info=True)
+        log.critical("-- ERRO INESPERADO E FATAL --", exc_info=True)
         if is_frozen():
             input("\nO PROGRAMA FALHOU. Pressione Enter para fechar...")
         sys.exit(1)

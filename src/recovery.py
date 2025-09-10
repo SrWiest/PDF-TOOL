@@ -161,3 +161,53 @@ def exporta_pdf_libreoffice(src: Path, dst: Path) -> bool:
     except Exception as e:
         log.warning(f"Falha na recuperação com LibreOffice: {e}")
         return False
+
+def preparar_pdfs_resiliente(file_paths: list[Path], prefer_libreoffice: bool = False) -> tuple[list[Path], list[Path]]:
+    ok_files, ignored_files = [], []
+    for file_path in file_paths:
+        log.info(f"Processando arquivo: {file_path.name}")
+        if not file_path.exists():
+            log.warning(f"Arquivo {file_path.name} não encontrado.")
+            ignored_files.append(file_path)
+            continue
+
+        if verifica_pdf(file_path):
+            log.info(f" ✔️ {file_path.name} é um PDF válido.")
+            ok_files.append(file_path)
+            continue
+
+        log.warning(f" ⚠️ {file_path.name} não é um PDF válido ou está corrompido. Tentando recuperar...")
+
+        recovery_methods = [
+            ("libreoffice", exporta_pdf_libreoffice),
+            ("qpdf", exporta_pdf_qpdf),
+            ("ghostscript", exporta_pdf_ghostscript),
+            ("mutool", exporta_pdf_mutool),
+            ("pdftk", exporta_pdf_pdftk),
+            ("imagem", exporta_pdf_como_imagem),
+        ]
+        if not prefer_libreoffice:
+            recovery_methods.pop(0)
+            recovery_methods.append(("libreoffice", exporta_pdf_libreoffice))
+
+        recovered = False
+        for method_name, method_func in recovery_methods:
+            recovered_path = file_path.with_suffix(f".{method_name}.pdf")
+            if method_func(file_path, recovered_path):
+                log.info(f" ✔️ Recuperado com sucesso usando {method_name.upper()}.\n")
+                ok_files.append(recovered_path)
+                recovered = True
+                break
+            else:
+                log.warning(f" ⚠️ Falha na recuperação com {method_name.upper()}.")
+                if recovered_path.exists():
+                    try:
+                        recovered_path.unlink()
+                    except OSError:
+                        pass
+        
+        if not recovered:
+            log.error(f" ❌ Não foi possível recuperar {file_path.name}. O arquivo será ignorado.")
+            ignored_files.append(file_path)
+            
+    return ok_files, ignored_files
