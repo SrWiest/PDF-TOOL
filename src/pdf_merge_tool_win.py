@@ -12,7 +12,7 @@ from typing import List, Tuple
 from src.utils import (
     get_version_info, is_frozen, human_size, file_size, get_executable_path, run_command
 )
-from src.recovery import (
+from recovery import (
     verifica_pdf, exporta_pdf_ghostscript, exporta_pdf_qpdf, exporta_pdf_mutool,
     exporta_pdf_pdftk, exporta_pdf_como_imagem, exporta_pdf_libreoffice, preparar_pdfs_resiliente
 )

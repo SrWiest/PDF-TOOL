@@ -15,7 +15,7 @@ except ImportError:
     psutil = None
     pdf2image_convert = None
 
-from src.utils import get_executable_path, run_command
+from utils import get_executable_path, run_command
 
 log = logging.getLogger(__name__)
 
